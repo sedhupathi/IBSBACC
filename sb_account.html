@@ -268,123 +268,14 @@
             <!-- <div class="form-group">
                 <button style="padding:15px 25px; font-size: medium;" type="button" onclick="clearForm()">Clear</button>
             </div> -->
-
-          <script>
-    const FLOW_URL = "https://default95f98fe368c84b46aa8f1a85191e55.9d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a9e45c0d3c5c4a47aeff03481cca6159/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=f9ufoy7P902FyVt9pwfKvq9iWrRsbG0ZrAViKLRBO8s";
-
-    const form = document.getElementById('accountForm');
-    const btn = document.getElementById('btnSubmit');
-    const msg = document.getElementById('formMsg');
-
-    function formToJson(fd) {
-      // Build JSON matching the schema
-      const payload = {
-        applicationType: fd.get('applicationType') || "",
-        branchName: fd.get('branchName') || "",
-        branchCode: fd.get('branchCode') || "",
-        cifNo: fd.get('cifNo') || "",
-        accNo: fd.get('accNo') || "",
-        customerName: fd.get('customerName') || "",
-        gender: fd.get('gender') || "",
-        maritalStatus: fd.get('maritalStatus') || "",
-        dob: fd.get('dob') || "",
-        fatherOrSpouseName: fd.get('fatherOrSpouseName') || "",
-        motherName: fd.get('motherName') || "",
-        address: fd.get('address') || "",
-        pinCode: fd.get('pinCode') || "",
-        state: fd.get('state') || "",
-        aadharNo: fd.get('aadharNo') || "",
-        mobileNo: fd.get('mobileNo') || "",
-        email: fd.get('email') || "",
-        panOrForm60Date: fd.get('panOrForm60Date') || "",
-        monthlyIncome: fd.get('monthlyIncome') || "",
-        netWorth: fd.get('netWorth') || "",
-        religion: fd.get('religion') || "",
-        category: fd.get('category') || "",
-        education: fd.get('education') || "",
-        emailToReceiveDoc: fd.get('emailToReceiveDoc') || "",
-        nominee_name: fd.get('nominee_name') || "",
-        nominee_dob: fd.get('nominee_dob') || "",
-        nominee_relation: fd.get('nominee_relation') || "",
-        submittedAt: new Date().toISOString(),
-        source: "web"
-      };
-      return payload;
-    }
-
-    function validateBusinessRules(fd) {
-      const errors = [];
-      const aadhar = fd.get('aadharNo') || '';
-      const mobile = fd.get('mobileNo') || '';
-      const email = (fd.get('email') || '').trim();
-    //   if (aadhar && !/^\d{12}$/.test(aadhar)) errors.push("Aadhar must be 12 digits.");
-    //   if (mobile && !/^\d{10}$/.test(mobile)) errors.push("Mobile must be 10 digits.");
-    //   if (email && email.length > 25) errors.push("Email must be ≤ 25 characters.");
-    //   return errors;
-    }
-
-    async function postJson(url, data) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        // mode: 'cors' // default for cross-origin; keep default
-      });
-      // Try to parse JSON; if not JSON, show text
-      const contentType = res.headers.get('content-type') || '';
-      const payload = contentType.includes('application/json') ? await res.json() : { text: await res.text() };
-      return { ok: res.ok, status: res.status, payload };
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      msg.textContent = '';
-      const fd = new FormData(form);
-
-      // Built-in HTML5 validity first
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-      // Additional business validations
-      const errors = validateBusinessRules(fd);
-    //   if (errors.length) {
-    //     msg.className = 'err';
-    //     msg.textContent = errors.join(' ');
-    //     return;
-    //   }
-
-      btn.disabled = true;
-      btn.textContent = 'Submitting...';
-
-      try {
-        const data = formToJson(fd);
-        const result = await postJson(FLOW_URL, data);
-
-        if (result.ok) {
-          msg.className = 'success';
-          msg.textContent = (result.payload && (result.payload.message || result.payload.text)) || 'Submitted successfully.';
-          form.reset();
-        } else {
-          msg.className = 'err';
-          msg.textContent = `Submission failed (${result.status}). ${JSON.stringify(result.payload)}`;
-        }
-      } catch (err) {
-        msg.className = 'err';
-        msg.textContent = 'Network error. Please try again.';
-        console.error(err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Submit';
-      }
-    });
-  </script>  
+ 
           <script>    const today = new Date();    const dd = String(today.getDate()).padStart(2, '0');    
           const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months start at 0    
           const yyyy = today.getFullYear();
           document.getElementById('dateField').value = `${dd}/${mm}/${yyyy}`;  
           </script>
         <script src="iptn.js"></script>
+        <script src="iptsebn.js"></script>
 
 
 
