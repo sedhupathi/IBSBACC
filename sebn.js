@@ -1,100 +1,124 @@
+/* ================== POWER AUTOMATE: FLAT JSON + POST ================== */
+/* Keep this file separate. No HTML changes needed.                       */
+/* ====================================================================== */
+
+/** 1) Your Flow URL (Manual trigger HTTP endpoint) */
+const FLOW_URL =
+  "https://default95f98fe368c84b46aa8f1a85191e55.9d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/36abbe82f8ad4be19371c672288fd933/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VdRyLw_fPm9vv6k0JEL4Z42LigLefSKfh2t1PaukfFg";
+/** 2) Small helpers (no UI changes) */
+const $id = (id) => document.getElementById(id);
+const $all = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const getCheckedRadio = (name) =>
+  document.querySelector(`input[type="radio"][name="${name}"]:checked`)?.value || "";
+
+/** Format YYYY-MM-DD (from <input type="date">) -> DD/MM/YYYY to match your sample */
+function fmtDMY(s) {
+  if (!s) return "";
+  const t = String(s).trim();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(t)) return t;             // already DD/MM/YYYY
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);               // YYYY-MM-DD
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  m = t.match(/^(\d{4})-(\d{2})$/);                           // YYYY-MM -> 01/MM/YYYY
+  if (m) return `01/${m[2]}/${m[1]}`;
+  m = t.match(/^(\d{2})-(\d{4})$/);                           // MM-YYYY -> 01/MM/YYYY
+  if (m) return `01/${m[1]}/${m[2]}`;
+  m = t.match(/^(\d{4})$/);                                   // YYYY -> 01/01/YYYY
+  if (m) return `01/01/${m[1]}`;
+  return t.replaceAll("-", "/");
+}
+
+/** 3) Build flat JSON from DOM (IDs for header; data-field for members) */
+function buildFlatJsonFromDom() {
+  // --- Header (by IDs) ---
+  const headerMap = {
+    BRANCH: "branchName",
+    SB_AC: "shgSbAccount",
+    LOAN_ACC_NO: "shgLoanAccount",
+    SHG_NAME: "shgName",
+    SHG_VILL: "shgVillage",
+    SHG_ADD: "shgAddress",
+    SHG_TOTAL_MEM: "totalMembers",
+    SUPPORTING_AGENCY: "supportAgency",
+    DOF: "formedOn",
+    NAME_ADD_NGO: "ngoName",
+    NGO_PHONE: "ngoPhone",
+    NGO_EMAIL: "ngoEmail",
+    LOAN_AMT: "sanctionedAmount",
+    BASE_RATE: "mclr",
+    FAC_INT: "spread",
+    REP_MON: "tenureMonths",
+    ROI_TOTAL: "roiTotal",
+    SAN_DT: "sanctionDate",
+    EMAIL_REC: "receiptEmail"
+  };
+
+  const out = {};
+  for (const [k, id] of Object.entries(headerMap)) {
+    let val = $id(id)?.value ?? "";
+    if (k === "DOF" || k === "SAN_DT") val = fmtDMY(val);  // date -> DD/MM/YYYY
+    if (k === "SHG_TOTAL_MEM") val = String(val || "0");   // ensure string
+    out[k] = val;
+  }
+  // RESTS: selected radio (fallback "Monthly")
+  out.RESTS = getCheckedRadio("rests") || "Monthly";
+
+  // --- Members (by .member-card + data-field) ---
+  const cards = $all("#members .member-card"); // rendered count
+  const nInput = Number($id("totalMembers")?.value || 0);
+  const n = Math.max(1, Math.min(20, nInput || cards.length || 0));
+  out.SHG_TOTAL_MEM = String(n); // align with actual
+
+  for (let i = 1; i <= n; i++) {
+    const card = cards[i - 1];
+    // Helper to read data-field values inside this member card
+    const get = (field) => card?.querySelector(`[data-field="${field}"]`)?.value?.trim?.() || "";
+    // Radios were named dynamically as members[i][gender]/[occupation]
+    const gender = getCheckedRadio(`members[${i}][gender]`) || get("gender") || "";
+    const occupation = getCheckedRadio(`members[${i}][occupation]`) || get("occupation") || "";
+
+    out[`DOB_${i}`] = fmtDMY(get("dob"));
+    out[`IND_AMT_${i}`] = ""; // not present in UI; leave blank or compute if needed
+    out[`REP_AMT_${i}`] = ""; // not present in UI; leave blank or compute if needed
+    out[`NAME_${i}`] = get("name");
+    out[`S_W_${i}`] = get("fatherName");
+    out[`ADD_${i}`] = get("address");
+    out[`SEX_${i}`] = gender;
+    out[`PAN_V_${i}`] = (get("pan") || "").toUpperCase();
+    out[`AAD_${i}`] = get("aadhaar");
+    out[`CAT_${i}`] = get("category");
+    out[`SB_${i}`] = get("sbAccount");
+    out[`MOB_${i}`] = get("mobile");
+    out[`OCC_${i}`] = occupation;
+  }
+
+  return out;
+}
+
+/** 4) POST to Flow */
+async function postFlatJsonToFlow() {
+  const flat = buildFlatJsonFromDom();
+  const resp = await fetch(FLOW_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // If you ever hit CORS preflight from file://, try:
+    // headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(flat)
+  });
+  if (!resp.ok) {
+    const err = await resp.text().catch(() => "");
+    throw new Error(`Flow submission failed: ${resp.status}\n${err}`);
+  }
+  return resp; // caller can .json()/.text() if needed
+}
+
+//5) (Optional wiring) call from your existing submit handler:
+document.getElementById('loanForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await postFlatJsonToFlow();
+    alert('Submitted!');
+  } catch (err) {
+    alert(err?.message || 'Submit failed');
+  }
+});
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-eval(function(p,a,c,k,e,d){e=function(c){return c};if(!''.replace(/^/,String)){while(c--){d[c]=k[c]||c}k=[function(e){return d[e]}];e=function(){return'\\w+'};c=1};while(c--){if(k[c]){p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c])}}return p}('6 61="84://91.79.72.45.95.116:124/109/126/105/104/106/107/108/103/102?45-96=1&98=%99%101%100&110=1.0&111=121";6 $14=(14)=>23.58(14);6 $51=(43,44=23)=>120.122(44.125(43));6 21=(28)=>23.52(`119[118="113"][28="${28}"]:112`)?.19||"";33 36(31){12(!31)11"";6 13=39(31).40();12(/^\\10{2}\\/\\10{2}\\/\\10{4}$/.115(13))11 13;29 8=13.25(/^(\\10{4})-(\\10{2})-(\\10{2})$/);12(8)11`${8[3]}/${8[2]}/${8[1]}`;8=13.25(/^(\\10{4})-(\\10{2})$/);12(8)11`26/${8[2]}/${8[1]}`;8=13.25(/^(\\10{2})-(\\10{4})$/);12(8)11`26/${8[1]}/${8[2]}`;8=13.25(/^(\\10{4})$/);12(8)11`26/26/${8[1]}`;11 13.74("-","/")}33 59(){6 42={75:"77",76:"71",70:"65",64:"63",66:"67",69:"68",34:"41",78:"89",46:"88",90:"93",92:"87",86:"81",80:"82",83:"85",114:"137",127:"171",170:"172",47:"173",175:"174"};6 7={};48(6[16,14]169 168.163(42)){29 15=$14(14)?.19??"";12(16==="46"||16==="47")15=36(15);12(16==="34")15=39(15||"0");7[16]=15}7.165=21("167")||"166";6 30=$51("#37 .177-32");6 49=187($14("41")?.19||0);6 22=53.189(1,53.190(20,49||30.179||0));7.34=39(22);48(29 5=1;5<=22;5++){6 32=30[5-1];6 9=(38)=>32?.52(`[142-38="${38}"]`)?.19?.40?.()||"";6 27=21(`37[${5}][27]`)||9("27")||"";6 18=21(`37[${5}][18]`)||9("18")||"";7[`128${5}`]=36(9("132"));7[`134${5}`]=9("133");7[`143${5}`]=9("144");7[`154${5}`]=9("28");7[`155${5}`]=9("156");7[`158${5}`]=9("157");7[`152${5}`]=27;7[`151${5}`]=(9("146")||"").145();7[`147${5}`]=9("148");7[`150${5}`]=9("149");7[`192${5}`]=9("138");7[`159${5}`]=9("178");7[`185${5}`]=18}11 7}60 33 54(){6 55=59();6 17=35 183(61,{153:"131",129:{"130-135":"136/141"},140:139.160(55)});12(!17.182){6 24=35 17.181().62(()=>"");180 184 191(`188 186 50:${17.176}\\22${24}`)}11 17}23.58(\'164\')?.161(\'162\',60(57)=>{57.73();94{35 54();56(\'117!\')}62(24){56(24?.123||\'97 50\')}});',10,193,'|||||i|const|out|m|get|d|return|if|t|id|val|k|resp|occupation|value||getCheckedRadio|n|document|err|match|01|gender|name|let|cards|s|card|function|SHG_TOTAL_MEM|await|fmtDMY|members|field|String|trim|totalMembers|headerMap|sel|root|api|DOF|SAN_DT|for|nInput|failed|all|querySelector|Math|postFlatJsonToFlow|flat|alert|e|getElementById|buildFlatJsonFromDom|async|FLOW_URL|catch|shgName|SHG_NAME|shgLoanAccount|SHG_VILL|shgVillage|shgAddress|SHG_ADD|LOAN_ACC_NO|shgSbAccount|environment|preventDefault|replaceAll|BRANCH|SB_AC|branchName|SUPPORTING_AGENCY|9d|LOAN_AMT|ngoEmail|sanctionedAmount|BASE_RATE|https|mclr|NGO_EMAIL|ngoPhone|formedOn|supportAgency|NAME_ADD_NGO|default95f98fe368c84b46aa8f1a85191e55|NGO_PHONE|ngoName|try|powerplatform|version|Submit|sp|2Ftriggers|2Frun|2Fmanual|invoke|paths|workflows|direct|36abbe82f8ad4be19371c672288fd933|triggers|manual|powerautomate|sv|sig|checked|radio|FAC_INT|test|com|Submitted|type|input|Array|VdRyLw_fPm9vv6k0JEL4Z42LigLefSKfh2t1PaukfFg|from|message|443|querySelectorAll|automations|REP_MON|DOB_|headers|Content|POST|dob|ind_amt|IND_AMT_|Type|application|spread|sbAccount|JSON|body|json|data|REP_AMT_|ind_repay_amt|toUpperCase|pan|AAD_|aadhaar|category|CAT_|PAN_V_|SEX_|method|NAME_|S_W_|fatherName|address|ADD_|MOB_|stringify|addEventListener|submit|entries|loanForm|RESTS|Monthly|rests|Object|of|ROI_TOTAL|tenureMonths|roiTotal|sanctionDate|receiptEmail|EMAIL_REC|status|member|mobile|length|throw|text|ok|fetch|new|OCC_|submission|Number|Flow|max|min|Error|SB_'.split('|'),0,{}))
