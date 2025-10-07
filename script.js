@@ -221,67 +221,67 @@
 
   // ======== Power Automate (HTTP trigger) integration ========
   // Use your Flow URL here (if your trigger is "Anyone with the endpoint", include the ?sig=... token).
-  const FLOW_URL =
-    "https://default95f98fe368c84b46aa8f1a85191e55.9d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a9e45c0d3c5c4a47aeff03481cca6159/triggers/manual/paths/invoke?api-version=1";
+  // const FLOW_URL =
+  //   "https://default95f98fe368c84b46aa8f1a85191e55.9d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a9e45c0d3c5c4a47aeff03481cca6159/triggers/manual/paths/invoke?api-version=1";
 
-  /**
-   * Validate -> build JSON via getFormData -> POST to Flow -> notify.
-   * NOTE: If you hit CORS preflight issues, set header to "Content-Type": "text/plain".
-   */
-  async function submitFormToFlow() {
-    const form = document.getElementById("loanForm");
-    if (!form) { alert("Form not found."); return; }
+  // /**
+  //  * Validate -> build JSON via getFormData -> POST to Flow -> notify.
+  //  * NOTE: If you hit CORS preflight issues, set header to "Content-Type": "text/plain".
+  //  */
+  // async function submitFormToFlow() {
+  //   const form = document.getElementById("loanForm");
+  //   if (!form) { alert("Form not found."); return; }
 
-    if (!form.checkValidity()) { form.reportValidity(); return; }
+  //   if (!form.checkValidity()) { form.reportValidity(); return; }
 
-    // Build JSON using your helper (includes all 1..20 members)
-    const payload = await getFormData({ includeFiles: false });
+  //   // Build JSON using your helper (includes all 1..20 members)
+  //   const payload = await getFormData({ includeFiles: false });
 
-    // Keep totalMembers aligned with actual count (safety)
-    if (Array.isArray(payload.members)) {
-      payload.shg.totalMembers = Math.max(1, Math.min(20, payload.members.length));
-    }
+  //   // Keep totalMembers aligned with actual count (safety)
+  //   if (Array.isArray(payload.members)) {
+  //     payload.shg.totalMembers = Math.max(1, Math.min(20, payload.members.length));
+  //   }
 
-    // UI lock on submit button (if present)
-    const btn = document.getElementById("submitBtn");
-    if (btn) {
-      btn.disabled = true;
-      btn.dataset.originalText = btn.textContent;
-      btn.textContent = "Submitting…";
-    }
+  //   // UI lock on submit button (if present)
+  //   const btn = document.getElementById("submitBtn");
+  //   if (btn) {
+  //     btn.disabled = true;
+  //     btn.dataset.originalText = btn.textContent;
+  //     btn.textContent = "Submitting…";
+  //   }
 
-    try {
-      const resp = await fetch(FLOW_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }, // try "text/plain" if CORS preflight blocks
-        body: JSON.stringify(payload)
-      });
+  //   try {
+  //     const resp = await fetch(FLOW_URL, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" }, // try "text/plain" if CORS preflight blocks
+  //       body: JSON.stringify(payload)
+  //     });
 
-      if (!resp.ok) {
-        const err = await resp.text().catch(() => "");
-        throw new Error(`Flow submission failed: ${resp.status}\n${err}`);
-      }
+  //     if (!resp.ok) {
+  //       const err = await resp.text().catch(() => "");
+  //       throw new Error(`Flow submission failed: ${resp.status}\n${err}`);
+  //     }
 
-      // Some flows return JSON; some return 200/202 with no body
-      let msg = "Submitted successfully!";
-      try {
-        const data = await resp.json();
-        if (data?.id || data?.reference || data?.url) {
-          msg = `Submitted! Reference: ${data.id || data.reference || data.url}`;
-        }
-      } catch { /* ignore non‑JSON body */ }
+  //     // Some flows return JSON; some return 200/202 with no body
+  //     let msg = "Submitted successfully!";
+  //     try {
+  //       const data = await resp.json();
+  //       if (data?.id || data?.reference || data?.url) {
+  //         msg = `Submitted! Reference: ${data.id || data.reference || data.url}`;
+  //       }
+  //     } catch { /* ignore non‑JSON body */ }
 
-      alert(msg);
-    } catch (e) {
-      console.error(e);
-      alert(e?.message || "Network error while submitting.");
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = btn.dataset.originalText || "Submit";
-      }
-    }
-  }
+  //     alert(msg);
+  //   } catch (e) {
+  //     console.error(e);
+  //     alert(e?.message || "Network error while submitting.");
+  //   } finally {
+  //     if (btn) {
+  //       btn.disabled = false;
+  //       btn.textContent = btn.dataset.originalText || "Submit";
+  //     }
+  //   }
+  // }
 
   // ============================================================
   // Save/Load and form wiring
@@ -371,14 +371,14 @@
   }
 
   // ---- Remove any inline onclick to avoid double execution ----
-  document.getElementById("submitBtn")?.removeAttribute("onclick");
+  // document.getElementById("submitBtn")?.removeAttribute("onclick");
 
-  // ---- Unified submit: push data to Power Automate ----
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    await submitFormToFlow();
-  });
+  // // ---- Unified submit: push data to Power Automate ----
+  // form?.addEventListener('submit', async (e) => {
+  //   e.preventDefault();
+  //   e.stopImmediatePropagation();
+  //   await submitFormToFlow();
+  // });
 
   // ============================================================
   // Aadhaar Secure-QR (decimal) + Aadhaar XML (PLBD) integration
@@ -679,4 +679,3 @@
     if (success) inputEl.value = ''; // clear after successful parse
   }, 50));
 })();
-
