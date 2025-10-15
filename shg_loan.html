@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SHG Loan Application Form – 20 Members</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --gap: 0.75rem;
+      --gap-lg: 1rem;
+      --bg: #f8fafc;
+      --ink: #0f172a;
+      --muted: #475569;
+      --brand: #0ea5e9;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, "Helvetica Neue", Arial;
+      color: var(--ink);
+      background: var(--bg);
+      margin: 0; padding: 0;
+      line-height: 1.45;
+    }
+
+    header, main { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    header h1 { margin: 0 0 .25rem; font-size: 1.4rem; }
+    header p { margin: 0; color: var(--muted); }
+
+    form {
+      background: #fff; border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1rem 1.25rem;
+    }
+
+    .grid { display: grid; gap: var(--gap); }
+    .grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+    fieldset {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: .75rem; margin: 0 0 var(--gap-lg);
+    }
+    legend { padding: 0 .4rem; color: var(--muted); font-weight: 600; }
+
+    label { display: block; font-size: .9rem; margin: 0 0 .25rem; }
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="file"],
+    select, textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 6px;
+      padding: .2rem .2rem; font: inherit; background: #fff;
+    }
+    textarea { min-height: 40px; }
+    input[readonly] { background: #f1f5f9; }
+
+    .inline { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+    .muted { color: var(--muted); font-size: .9rem; }
+
+    .members {
+      display: grid; gap: var(--gap);
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    .member-card {
+      border: 1px solid var(--border); border-radius: 8px; padding: .75rem;
+      background: #fff;
+    }
+    .member-title {
+      font-weight: 600; margin: 0 0 .5rem; color: var(--muted);
+    }
+
+    .actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap; }
+    button {
+      appearance: none; border: 1px solid var(--brand); background: var(--brand);
+      color: #fff; border-radius: 8px; padding: .6rem 1rem; font: inherit; cursor: pointer;
+    }
+    button.secondary { background: #fff; color: var(--brand); }
+    button.warn { border-color: var(--danger); color: var(--danger); background: #fff; }
+
+    /* Print-friendly */
+    @media print {
+      header, .actions, .helper { display: none; }
+      form { border: none; }
+      .member-card { page-break-inside: avoid; }
+    }
+
+    .helper {
+      max-width: 1100px; margin: 0 auto 0.5rem auto; padding: 0 1rem;
+      color: var(--muted); font-size: .9rem;
+    }
+    .qr-preview a { word-break: break-all; }
+
+    .field-row {
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+    gap: 10px; /* space between label and input */
+    margin-bottom: 8px;
+    }
+    .field-row-new {
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+    gap: 50px; /* space between label and input */
+    margin-bottom: 8px;
+    }
+    .field-row label {
+    min-width: 15px; /* keeps labels aligned */
+    }
+    .field-row input {
+    flex: 1; /* input grows to fill space */
+    }
+    select, select option {
+          text-align: center;        /* centers text inside dropdown and options */
+        }
+    input:invalid {
+      border: 2px solid red;
+    }
+
+  </style>
+</head>
+<body>
+  <noscript>
+    <div class="helper" style="color: var(--danger);">This page needs JavaScript enabled to save/load JSON and manage member cards.</div>
+  </noscript>
+
+  <header>
+    <h1>SHG Loan Application Form</h1>
+    <p class="muted">Enter SHG details and up to 20 member profiles. You can save and load data as JSON.</p>
+  </header>
+
+  <div class="helper">
+    <strong>Save/Load:</strong> Use <em>Save JSON</em> (small file) or <em>Save JSON + QR files</em> (embeds uploads; bigger file), and <em>Load JSON</em> to restore later.
+  </div>
+
+  <main>
+    <form id="loanForm" novalidate>
+      <!-- SHG DETAILS -->
+      <fieldset>
+        <legend>SHG Details</legend>
+        <div class="grid cols-3">
+          <div>
+            <label for="branchName">Branch Name</label>
+            <input id="branchName" name="branchName" type="text" />
+          </div>
+          <div>
+            <label for="shgName">SHG Name</label>
+            <input id="shgName" name="shgName" type="text" required/>
+          </div>
+          <div>
+            <label for="shgVillage">SHG Village</label>
+            <input id="shgVillage" name="shgVillage" type="text" />
+          </div>
+
+          <div>
+            <label for="shgAddress">SHG Full Address</label>
+            <input id="shgAddress" name="shgAddress" type="text">
+          </div>
+          <div>
+            <label for="formedOn">Date of Formation</label>
+            <input id="formedOn" name="formedOn" type="text" placeholder="dd/mm/yyyy"/>
+          </div>
+          <div>
+            <label for="totalMembers">Total Members (1–20)</label>
+            <input id="totalMembers" name="totalMembers" type="number" min="1" max="20" value="6" />
+          </div>
+
+          <div>
+            <label for="applicationDate">Application Date</label>
+            <input id="applicationDate" name="applicationDate" type="text" placeholder="dd/mm/yyyy"/>
+          </div>
+          <div>
+            <label for="sanctionDate">Sanction Date</label>
+            <input id="sanctionDate" name="sanctionDate" type="text" placeholder="dd/mm/yyyy"/>
+          </div>
+          <div>
+            <label for="supportAgency">Support Agency</label>
+            <input id="supportAgency" name="supportAgency" type="text" />
+          </div>
+
+          <div>
+            <label for="ngoName">NGO Name & Address</label>
+            <input id="ngoName" name="ngoName" type="text">
+          </div>
+          <div>
+            <label for="ngoPersonName">NGO Person Name</label>
+            <input id="ngoPersonName" name="ngoPersonName" type="text">
+          </div>
+          <div>
+            <label for="ngoPersonPosition">NGO Person Position</label>
+            <input id="ngoPersonPosition" name="ngoPersonPosition" type="text" placeholder="Secretary">
+          </div>
+          <div>
+            <label for="ngoPhone">NGO Phone</label>
+            <input
+              id="ngoPhone" name="ngoPhone" type="tel"
+              inputmode="numeric"
+              pattern="^[6-9]\d{9}$"
+              placeholder="10-digit mobile (starts 6–9)"
+              aria-describedby="phoneHelp" />
+            <div id="phoneHelp" class="muted"></div>
+          </div>
+          <div>
+            <label for="ngoEmail">NGO Email</label>
+            <input id="ngoEmail" name="ngoEmail" type="email" />
+          </div>
+
+          <div>
+            <label for="shgSbAccount">SHG SB A/c</label>
+            <input id="shgSbAccount" name="shgSbAccount" type="text" />
+          </div>
+          <div>
+            <label for="shgLoanAccount">SHG Loan A/c</label>
+            <input id="shgLoanAccount" name="shgLoanAccount" type="text" />
+          </div>
+          <div>
+            <label for="sanctionedAmount">Sanctioned Loan Amount</label>
+            <input id="sanctionedAmount" name="sanctionedAmount" type="number" />
+          </div>
+
+          <div>
+            <label for="mclr">MCLR Rate (%)</label>
+            <input id="mclr" name="mclr" type="text" />
+          </div>
+          <div>
+            <label for="spread">Factor Spread (%)</label>
+            <input id="spread" name="spread" type="text"/>
+          </div>
+          <div>
+            <label for="roiTotal">ROI Total (%)</label>
+            <input id="roiTotal" name="roiTotal" type="text"/>
+          </div>
+
+          <div>
+            <label for="receiptEmail">E-mail to receive the document</label>
+            <input id="receiptEmail" name="receiptEmail" type="text" required/>
+          </div>
+          <div>
+            <label for="tenureMonths">Repay in (months)</label>
+            <input id="tenureMonths" name="tenureMonths" type="number" min="1" />
+          </div>
+            <div>
+            <label>RESTS (Compounding Frequency)</label>
+            <div class="field-row-new">
+              <label><input type="radio" name="rests" value="Monthly" checked /> Monthly</label>
+              <label><input type="radio" name="rests" value="Quarterly" /> Quarterly</label>
+              <label><input type="radio" name="rests" value="Half-yearly" /> Half-yearly</label>
+              <label><input type="radio" name="rests" value="Yearly" /> Yearly</label>
+            </div>
+            </div>
+        </div>
+
+
+          <div class="field-row">
+            <div>
+            <label for="FIN_POS_DATE">Fin Position Date</label>
+            <input id="FIN_POS_DATE" name="FIN_POS_DATE" type="text" placeholder="01/01/2025"/></div>
+            <div>
+            <label for="SAVINGS_MEMBERS">Total Savings Mem</label>
+            <input id="SAVINGS_MEMBERS" name="SAVINGS_MEMBERS" type="text"/></div>
+            <div>
+            <label for="OTHER_LIABILITIES">Other Liabilities</label>
+            <input id="OTHER_LIABILITIES" name="OTHER_LIABILITIES" type="text"/></div>
+            <div>
+            <label for="FIN_OTHER_INCOME">Total Interest & Other Income</label>
+            <input id="FIN_OTHER_INCOME" name="FIN_OTHER_INCOME" type="text"/></div>
+            <div>
+            <label for="CASH_IN_HAND">CASH in hand</label>
+            <input id="CASH_IN_HAND" name="CASH_IN_HAND" type="text"/></div>
+            <div>
+            <label for="DEPOSIT_WITH_BANK">Deposit with Bank</label>
+            <input id="DEPOSIT_WITH_BANK" name="DEPOSIT_WITH_BANK" type="text"/></div>
+            <div>
+            <label for="LOAN_OUT_MEM">Loan Outstan Mem</label>
+            <input id="LOAN_OUT_MEM" name="LOAN_OUT_MEM" type="text"/></div>
+            
+          </div>
+
+          <div class="field-row">
+            <div>
+            <label for="OTHER_ASSETS">Other Assets</label>
+            <input id="OTHER_ASSETS" name="OTHER_ASSETS" type="text"/></div>
+            <div>
+            <label for="REG_MEETINGS_MARK">Meeting Mark</label>
+            <input id="REG_MEETINGS_MARK" name="REG_MEETINGS_MARK" type="text" value="10"/></div>
+            <div>
+            <label for="REG_ATTEN_MARK">Attend Mark</label>
+            <input id="REG_ATTEN_MARK" name="REG_ATTEN_MARK" type="text" value="10"/></div>
+            <div>
+            <label for="REG_SAV_MARK">Savings by Mem Ma</label>
+            <input id="REG_SAV_MARK" name="REG_SAV_MARK" type="text" value="10"/></div>
+            <div>
+            <label for="V_LEND_MARK">Velocity of Lending</label>
+            <input id="V_LEND_MARK" name="V_LEND_MARK" type="text" value="20"/></div>
+            <div>
+            <label for="REG_REPAY_MARK">Regularity in Repay</label>
+            <input id="REG_REPAY_MARK" name="REG_REPAY_MARK" type="text" value="20"/></div>
+            <div>
+            <label for="RES_MARK">Resolution Book</label>
+            <input id="RES_MARK" name="RES_MARK" type="text" value="4"/></div>
+            
+          </div>
+
+          <div class="field-row">
+            <div>
+            <label for="CASH_MARK">Cash Book</label>
+            <input id="CASH_MARK" name="CASH_MARK" type="text" value="8"/></div>
+            <div>
+            <label for="SAVINGS_LED_MARK">Savings Ledger</label>
+            <input id="SAVINGS_LED_MARK" name="SAVINGS_LED_MARK" type="text" value="4"/></div>
+            <div>
+            <label for="LOAN_LED_MARK">Loan Ledger</label>
+            <input id="LOAN_LED_MARK" name="LOAN_LED_MARK" type="text" value="4"/></div>
+            <div>
+            <label for="GEN_LED_MARK">General Ledger</label>
+            <input id="GEN_LED_MARK" name="GEN_LED_MARK" type="text" value="6"/></div>
+            <div>
+            <label for="IND_PB_MARK">Individual Passbook</label>
+            <input id="IND_PB_MARK" name="IND_PB_MARK" type="text" value="4"/></div>
+
+            <div>
+            <label for="GRADE_PER">Total Grade Marks</label>
+            <input id="GRADE_PER" name="GRADE_PER" type="text" value="100"/></div>
+            <!-- <div>
+            <label for="GRADE_PER">Total Grade Marks</label>
+            <input id="GRADE_PER" name="GRADE_PER" type="text"/></div> -->
+ 
+          </div>
+
+
+      </fieldset>
+
+      <!-- MEMBERS -->
+      <fieldset>
+        <legend>SHG Members</legend>
+        <div id="members" class="members"></div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="reset" class="secondary" id="clearBtn">Clear</button>
+
+        <!-- Save/Load JSON controls -->
+        <button id="saveJsonBtn" type="button" class="secondary">Save JSON</button>
+        <!-- <button id="saveJsonWithFilesBtn" type="button" class="secondary"
+                title="Embeds QR file(s) into the JSON (base64). File size may be large.">
+          Save JSON + QR files
+        </button> -->
+        <button id="loadJsonBtn" type="button" class="secondary">Load JSON</button>
+        <input id="jsonFilePicker" type="file" accept="application/json" hidden />
+
+        <!-- AFTER -->
+        <button id="submitBtn" onclick="return confirm('Are you sure you want to submit?')" type="submit">Submit</button>
+      </div>
+    </form>
+  </main>
+
+  <!-- MEMBER TEMPLATE -->
+  <template id="memberTemplate">
+    <div class="member-card">
+      <div class="member-title"></div>
+      <div class="grid cols-2">
+        <div>
+          <!-- <label>QR (optional)</label> -->
+          <!-- Keep file input for uploads; if you don't need files, switch to text later -->
+          <input type="text"  data-field="qr" placeholder="Qr code paste here"/>
+          <div class="status muted">Please paste here</div>
+          <!-- <input type="text"  data-field="qr" placeholder="input other than numbers"/> -->
+        </div>
+        <div class="field-row">
+          <label>Name:</label>
+          <input type="text" data-field="name"/>
+        </div>
+        <div class="field-row" >
+          <label>Father Name:</label>
+          <input type="text" data-field="fatherName"/>
+        </div>
+        <div class="field-row">
+          <label>Address:</label>
+          <input type="text" data-field="address"/>
+        </div>
+
+
+        <div class="field-row">
+          <label>Gender:</label>
+          <div class="inline" data-field="gender">
+            <label><input type="radio" name="GEN_PLACEHOLDER" value="Male" /> Male</label>
+            <label><input type="radio" name="GEN_PLACEHOLDER" value="Female" /> Female</label>
+            <label><input type="radio" name="GEN_PLACEHOLDER" value="Other" /> Other</label>
+          </div>
+        </div>
+        <div class="field-row">
+          <label>DOB:</label>
+          <input type="text" data-field="dob"/>
+        </div>
+        <div class="field-row">
+          <label>Aadhaar:</label>
+          <input type="text" data-field="aadhaar"/>
+        </div>
+        <div class="field-row">
+          <label>PAN:</label>
+          <input type="text" data-field="pan"/>
+        </div>
+
+
+        <div class="field-row">
+          <label>Category:</label>
+          <select data-field="category">
+            <option value="">-- Select --</option>
+            <option>OC</option>
+            <option>BC</option>
+            <option selected>MBC</option>
+            <option>SC</option>
+            <option>ST</option>
+            <option>General</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <label>SB Acc:</label>
+          <input type="text" data-field="sbAccount"/>
+        </div>
+        <div class="field-row">
+          <label>Mobile:</label>
+          <input type="text" data-field="mobile"/>
+        </div>
+
+        <div class="field-row">
+          <label>Occupation:</label>
+          <div class="inline" data-field="occupation">
+            <label><input type="radio" name="OCC_PLACEHOLDER" value="AGRI" checked/> AGRI</label>
+            <label><input type="radio" name="OCC_PLACEHOLDER" value="NON AGRI" /> NON AGRI</label>
+          </div>
+        </div>
+        <div class="field-row">
+          <div>
+          <label>Indi Amount:</label>
+          <input type="text" data-field="IND_AMT" /></div>
+          <div>
+          <label>Indi Rep Amt:</label>
+          <input type="text" data-field="REP_AMT"/></div>
+          <div>
+          <label>Ann Repay for loan:</label>
+          <input type="text" data-field="ANN_REP" value="50000"/></div>
+        </div>
+        <div class="field-row">
+          <div>
+          <label>House Value:</label>
+          <input type="text" data-field="H_VALUE" value="500000"/></div>
+          <div>
+          <label>Land in Acre:</label>
+          <input type="text" data-field="BLOCK" value="1 A"/></div>
+          <div>
+          <label>Land Value:</label>
+          <input type="text" data-field="L_VALUE" value="400000"/></div>
+        </div>
+        <div class="field-row">
+          <div>
+          <label>Jewel Wt:</label>
+          <input type="text" data-field="JL_WT" value="4g"/></div>
+          <div>
+          <label>Jewel Value:</label>
+          <input type="text" data-field="J_VALUE" value="40000"/></div>
+          <div>
+          <label>Cattle No.:</label>
+          <input type="text" data-field="CATTLE_NO" value="1"/></div>
+          <div>
+          <label>Cattle Value:</label>
+          <input type="text" data-field="C_VALUE" value="30000"/></div>
+        </div>
+        <div class="field-row">
+          <div>
+          <label>Savings Mem:</label>
+          <input type="text" data-field="SAV_MEM" value="25000"/></div>
+          <div>
+          <label>Other Liability:</label>
+          <input type="text" data-field="OTHER_LIA" value="40000"/></div>
+          <div>
+          <label>Total Ann Inc:</label>
+          <input type="text" data-field="TA_I" value="120000"/></div>
+          <div>
+          <label>Total Ann Exp:</label>
+          <input type="text" data-field="TA_E" value="50000"/></div>
+        </div>
+
+
+
+    </div>
+  </template>
+
+
+  <script>
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      const form = document.getElementById('loanForm');
+      form.reset(); // Clears values
+
+      
+
+      // Optional: If you also re-render members, ensure you only change innerHTML,
+      // not the #members node itself. temp.js handles re-render via totalMembers change.
+      // For example, you can just leave the rows as-is; the delegated listener still works.
+    });
+  </script>
+<script src="shg_json.js"></script>
+<script src="shg_script.js"></script>
+
+
+
+</body>
+</html>
